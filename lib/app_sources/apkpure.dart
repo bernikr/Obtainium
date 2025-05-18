@@ -130,18 +130,22 @@ class APKPure extends AppSource {
       if (apkUrls.isEmpty) {
         var link =
             html.querySelector("a.download-start-btn")?.attributes['href'];
-        RegExp downloadLinkRegEx = RegExp(
-            r'^https:\/\/d\.[^/]+\/b\/([^/]+)\/[^/?]+\?versionCode=([0-9]+)$',
-            caseSensitive: false);
-        RegExpMatch? match = downloadLinkRegEx.firstMatch(link ?? '');
-        if (match == null) {
+        if (link == null) {
           throw NoAPKError();
         }
-        String type = match.group(1)!;
-        String versionCode = match.group(2)!;
+        var uri = Uri.parse(link);
+        String type = uri.pathSegments[1];
+        String? versionCode = uri.queryParameters['versionCode'];
+        if (versionCode == null) {
+          throw NoAPKError();
+        }
+        String arch = uri.queryParameters['nc'] ?? '';
+        if (hosts.contains(host)) {
+          uri = uri.replace(host: 'd.cdnpure.com');
+        }
         apkUrls = [
-          MapEntry('$appId-$versionCode-.${type.toLowerCase()}',
-              'https://d.${hosts.contains(host) ? 'cdnpure.com' : host}/b/$type/$appId?versionCode=$versionCode')
+          MapEntry(
+              '$appId-$versionCode-$arch.${type.toLowerCase()}', uri.toString())
         ];
       }
       String version = Uri.parse(link).pathSegments.last;
